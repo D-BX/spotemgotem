@@ -17,9 +17,17 @@ export const SPOTIFY_CLIENT_ID: string = CLIENT_ID;
 // pinned to this host/port in vite.config.ts.
 export const REDIRECT_URI = 'http://127.0.0.1:5173/callback';
 
-// Minimal scopes for Milestone 1 (profile only). Later milestones add scopes
-// deliberately; changing this set triggers a fresh consent screen.
-export const SCOPES = 'user-read-email user-read-private';
+// Scopes requested so far. `streaming` + playback-state/modify are required by
+// the Web Playback SDK (Milestone 2). Changing this set triggers a fresh consent
+// screen, so an existing session must log in again to grant the new scopes.
+export const SCOPES = [
+  'streaming',
+  'user-read-email',
+  'user-read-private',
+  'user-read-playback-state',
+  'user-modify-playback-state',
+  'user-read-currently-playing',
+].join(' ');
 
 export const AUTH_URL = 'https://accounts.spotify.com/authorize';
 export const TOKEN_URL = 'https://accounts.spotify.com/api/token';

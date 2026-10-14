@@ -4,6 +4,10 @@
 // this module is pure state.
 
 const REFRESH_TOKEN_KEY = 'spotemgotem.refresh_token';
+// The scopes the stored refresh token was actually granted. Persisted so that,
+// after the app adds new scopes, we can detect a stale grant and force a full
+// re-auth instead of silently refreshing an under-scoped token.
+const GRANTED_SCOPES_KEY = 'spotemgotem.granted_scopes';
 
 // Treat the access token as expired this many ms early to avoid races against
 // the real expiry during a request.
@@ -34,8 +38,17 @@ export function setRefreshToken(token: string): void {
   localStorage.setItem(REFRESH_TOKEN_KEY, token);
 }
 
+export function getGrantedScopes(): string | null {
+  return localStorage.getItem(GRANTED_SCOPES_KEY);
+}
+
+export function setGrantedScopes(scope: string): void {
+  localStorage.setItem(GRANTED_SCOPES_KEY, scope);
+}
+
 export function clearTokens(): void {
   accessToken = null;
   expiresAt = 0;
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(GRANTED_SCOPES_KEY);
 }

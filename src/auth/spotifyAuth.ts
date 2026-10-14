@@ -12,9 +12,11 @@ import { generateCodeChallenge, generateCodeVerifier, randomState } from './pkce
 import {
   clearTokens,
   getAccessToken,
+  getGrantedScopes,
   getRefreshToken,
   isAccessTokenExpired,
   setAccessToken,
+  setGrantedScopes,
   setRefreshToken,
 } from './tokenStore';
 
@@ -47,6 +49,23 @@ function applyTokenResponse(data: TokenResponse): void {
   setAccessToken(data.access_token, data.expires_in);
   // On refresh the server may omit refresh_token; the existing one stays valid.
   if (data.refresh_token) setRefreshToken(data.refresh_token);
+  if (data.scope !== undefined) {
+    setGrantedScopes(data.scope);
+    // Diagnostic: confirm which scopes Spotify actually granted this session.
+    console.info('[auth] granted scopes:', data.scope);
+  }
+}
+
+/**
+ * True only if the stored grant covers every scope the app currently needs.
+ * After the app adds new scopes, an older refresh token reports a smaller set,
+ * so we must force a fresh authorization rather than silently refreshing.
+ */
+export function hasRequiredScopes(): boolean {
+  const granted = getGrantedScopes();
+  if (!granted) return false;
+  const grantedSet = new Set(granted.split(' '));
+  return SCOPES.split(' ').every((scope) => grantedSet.has(scope));
 }
 
 /** Build the authorize URL and redirect the browser to Spotify's consent page. */

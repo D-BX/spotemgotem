@@ -1,11 +1,14 @@
-import { Match, Show, Switch, onMount, type Component } from 'solid-js';
+import { Match, Show, Switch, createEffect, onMount, type Component } from 'solid-js';
 import {
   getValidAccessToken,
   handleCallback,
+  hasRequiredScopes,
   hasStoredSession,
   isCallbackUrl,
+  logout,
 } from './auth/spotifyAuth';
 import { getCurrentUser } from './api/client';
+import { initializePlayer } from './player/spotifyPlayer';
 import { error, setError, setProfile, setStatus, status } from './stores/auth';
 import Login from './views/Login';
 import Home from './views/Home';
@@ -25,6 +28,14 @@ const App: Component = () => {
         return;
       }
       if (hasStoredSession()) {
+        if (!hasRequiredScopes()) {
+          // The stored grant predates the app's current scopes. Drop it and
+          // require a fresh consent instead of refreshing an under-scoped token.
+          logout();
+          setError('New permissions are required. Please reconnect with Spotify.');
+          setStatus('anonymous');
+          return;
+        }
         // Silent refresh from the stored refresh token, then fetch profile.
         await getValidAccessToken();
         await loadProfile();
@@ -34,6 +45,16 @@ const App: Component = () => {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
       setStatus('anonymous');
+    }
+  });
+
+  // Initialize the Web Playback SDK once we are authenticated. initializePlayer
+  // guards against double init, so this is safe to run on each status change.
+  createEffect(() => {
+    if (status() === 'authed') {
+      void initializePlayer().catch((e: unknown) =>
+        setError(e instanceof Error ? e.message : String(e)),
+      );
     }
   });
 
