@@ -1,4 +1,17 @@
-import { Match, Show, Switch, createEffect, onMount, type Component } from 'solid-js';
+// Root component. Handles the auth bootstrap (callback / silent refresh), kicks
+// off the Web Playback SDK once authenticated, and then mounts the router with
+// Layout as the app shell. View components are lazy-loaded for code splitting.
+
+import {
+  Match,
+  Show,
+  Switch,
+  createEffect,
+  lazy,
+  onMount,
+  type Component,
+} from 'solid-js';
+import { Route, Router } from '@solidjs/router';
 import {
   getValidAccessToken,
   handleCallback,
@@ -7,11 +20,18 @@ import {
   isCallbackUrl,
   logout,
 } from './auth/spotifyAuth';
-import { getCurrentUser } from './api/client';
+import { getCurrentUser } from './api/spotify';
 import { initializePlayer } from './player/spotifyPlayer';
 import { error, setError, setProfile, setStatus, status } from './stores/auth';
 import Login from './views/Login';
-import Home from './views/Home';
+import Layout from './views/Layout';
+
+const Library = lazy(() => import('./views/Library'));
+const Playlist = lazy(() => import('./views/Playlist'));
+const Album = lazy(() => import('./views/Album'));
+const LikedSongs = lazy(() => import('./views/LikedSongs'));
+const Search = lazy(() => import('./views/Search'));
+const Queue = lazy(() => import('./views/Queue'));
 
 async function loadProfile(): Promise<void> {
   const user = await getCurrentUser();
@@ -67,7 +87,14 @@ const App: Component = () => {
           </p>
         </Match>
         <Match when={status() === 'authed'}>
-          <Home />
+          <Router root={Layout}>
+            <Route path="/" component={Library} />
+            <Route path="/search" component={Search} />
+            <Route path="/queue" component={Queue} />
+            <Route path="/collection/tracks" component={LikedSongs} />
+            <Route path="/playlist/:id" component={Playlist} />
+            <Route path="/album/:id" component={Album} />
+          </Router>
         </Match>
         <Match when={status() === 'anonymous'}>
           <Login />
@@ -78,9 +105,18 @@ const App: Component = () => {
           <p
             role="alert"
             style={{
+              position: 'fixed',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              'z-index': 1000,
               'font-family': 'system-ui, sans-serif',
-              padding: '0 2rem',
-              color: '#c0392b',
+              margin: '0.5rem',
+              padding: '0.5rem 1rem',
+              'border-radius': '0.5rem',
+              background: '#2a0d0d',
+              border: '1px solid #c0392b',
+              color: '#f5b7b1',
             }}
           >
             {msg()}

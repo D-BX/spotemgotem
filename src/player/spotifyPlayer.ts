@@ -233,3 +233,33 @@ export async function playUri(input: string): Promise<void> {
     body,
   });
 }
+
+/**
+ * Play a context (album/playlist/artist URI), optionally starting at a specific
+ * track within it. Used when a user clicks a track inside a list.
+ */
+export async function playContext(
+  contextUri: string,
+  offsetUri?: string,
+): Promise<void> {
+  if (!playerState.deviceId) throw new Error('Player is not ready yet.');
+  const body: Record<string, unknown> = { context_uri: contextUri };
+  if (offsetUri) body.offset = { uri: offsetUri };
+  await apiPut('/me/player/play', {
+    query: { device_id: playerState.deviceId },
+    body,
+  });
+}
+
+/** Play a single track immediately (no surrounding context). */
+export async function playTrack(trackUri: string): Promise<void> {
+  if (!playerState.deviceId) throw new Error('Player is not ready yet.');
+  await apiPut('/me/player/play', {
+    query: { device_id: playerState.deviceId },
+    body: { uris: [trackUri] },
+  });
+}
+
+export function getDeviceId(): string | null {
+  return playerState.deviceId;
+}

@@ -10,6 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@solidjs/router": "^0.15.3",
+    "@tanstack/solid-virtual": "^3.11.2",
+    "idb-keyval": "^6.2.1",
     "solid-js": "^1.9.3"
   },
   "devDependencies": {
