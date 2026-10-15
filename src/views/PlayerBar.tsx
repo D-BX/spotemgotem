@@ -9,13 +9,7 @@ import {
   toggleShuffle,
   togglePlay,
 } from '../player/spotifyPlayer';
-
-function formatTime(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+import { formatTime } from '../lib/format';
 
 const REPEAT_LABEL = ['Repeat: off', 'Repeat: all', 'Repeat: one'] as const;
 
@@ -38,16 +32,16 @@ const PlayerBar: Component = () => {
         bottom: 0,
         display: 'flex',
         'align-items': 'center',
-        gap: '1rem',
-        padding: '0.75rem 1rem',
-        background: '#111',
-        color: '#eee',
-        'border-top': '1px solid #333',
-        'font-family': 'system-ui, sans-serif',
-        'font-size': '0.85rem',
+        gap: 'var(--sp-5)',
+        padding: 'var(--sp-4) var(--sp-5)',
+        background: 'var(--bg-player)',
+        color: 'var(--text)',
+        'border-top': '1px solid var(--border-input)',
+        'font-family': 'var(--font-sans)',
+        'font-size': 'var(--fs-smd)',
       }}
     >
-      <div style={{ display: 'flex', 'align-items': 'center', gap: '0.75rem', 'min-width': '14rem' }}>
+      <div style={{ display: 'flex', 'align-items': 'center', gap: 'var(--sp-4)', 'min-width': '14rem' }}>
         <Show when={playerState.track?.image}>
           {(src) => <img src={src()} alt="" width={48} height={48} />}
         </Show>
@@ -55,13 +49,13 @@ const PlayerBar: Component = () => {
           <div style={{ 'white-space': 'nowrap', 'text-overflow': 'ellipsis', overflow: 'hidden' }}>
             {playerState.track?.name ?? 'Nothing playing'}
           </div>
-          <div style={{ color: '#9aa', 'white-space': 'nowrap', 'text-overflow': 'ellipsis', overflow: 'hidden' }}>
+          <div style={{ color: 'var(--text-subtle)', 'white-space': 'nowrap', 'text-overflow': 'ellipsis', overflow: 'hidden' }}>
             {playerState.track?.artists ?? ''}
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', 'align-items': 'center', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', 'align-items': 'center', gap: 'var(--sp-3)' }}>
         <button type="button" onClick={() => void toggleShuffle()} style={{ opacity: playerState.shuffle ? 1 : 0.5 }}>
           Shuffle
         </button>
@@ -79,7 +73,7 @@ const PlayerBar: Component = () => {
         </button>
       </div>
 
-      <div style={{ display: 'flex', 'align-items': 'center', gap: '0.5rem', flex: 1 }}>
+      <div style={{ display: 'flex', 'align-items': 'center', gap: 'var(--sp-3)', flex: 1 }}>
         <span>{formatTime(playerState.positionMs)}</span>
         <input
           type="range"
@@ -93,7 +87,7 @@ const PlayerBar: Component = () => {
         <span>{formatTime(playerState.durationMs)}</span>
       </div>
 
-      <div style={{ display: 'flex', 'align-items': 'center', gap: '0.25rem', width: '8rem' }}>
+      <div style={{ display: 'flex', 'align-items': 'center', gap: 'var(--sp-1)', width: '8rem' }}>
         <span>Vol</span>
         <input
           type="range"
@@ -107,7 +101,7 @@ const PlayerBar: Component = () => {
       </div>
 
       <Show when={!playerState.isReady}>
-        <span style={{ color: '#e67e22' }}>Connecting…</span>
+        <span style={{ color: 'var(--warning)' }}>Connecting…</span>
       </Show>
     </footer>
   );

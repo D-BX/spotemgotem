@@ -13,24 +13,24 @@ const TrackRow: Component<{ track: Track; index?: number }> = (props) => (
     style={{
       display: 'flex',
       'align-items': 'center',
-      gap: '0.75rem',
-      padding: '0.4rem 0.5rem',
-      'border-bottom': '1px solid #1e1e1e',
+      gap: 'var(--sp-4)',
+      padding: 'var(--sp-2) var(--sp-3)',
+      'border-bottom': '1px solid var(--border)',
     }}
   >
     <Show when={props.index !== undefined}>
-      <span style={{ width: '1.5rem', color: '#888', 'text-align': 'right' }}>{(props.index ?? 0) + 1}</span>
+      <span style={{ width: '1.5rem', color: 'var(--text-muted)', 'text-align': 'right' }}>{(props.index ?? 0) + 1}</span>
     </Show>
     <Show when={props.track.album.images[0]?.url}>
-      {(src) => <img src={src()} alt="" width={36} height={36} style={{ 'border-radius': '0.25rem' }} />}
+      {(src) => <img src={src()} alt="" width={36} height={36} style={{ 'border-radius': 'var(--radius-sm)' }} />}
     </Show>
     <div style={{ flex: 1, overflow: 'hidden' }}>
       <div style={{ 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>{props.track.name}</div>
-      <div style={{ color: '#9aa', 'font-size': '0.8rem', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>
+      <div style={{ color: 'var(--text-subtle)', 'font-size': 'var(--fs-sm)', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>
         {props.track.artists.map((a) => a.name).join(', ')}
       </div>
     </div>
-    <span style={{ color: '#888' }}>{formatTime(props.track.duration_ms)}</span>
+    <span style={{ color: 'var(--text-muted)' }}>{formatTime(props.track.duration_ms)}</span>
   </div>
 );
 
@@ -47,21 +47,21 @@ const Queue: Component = () => {
       </div>
 
       <Show when={resource.error()}>
-        {(e) => <p style={{ color: '#c0392b' }}>{e().message}</p>}
+        {(e) => <p style={{ color: 'var(--error-border)' }}>{e().message}</p>}
       </Show>
 
-      <Show when={resource.data()} fallback={<div style={{ color: '#666' }}>Loading…</div>}>
+      <Show when={resource.data()} fallback={<div style={{ color: 'var(--text-disabled)' }}>Loading…</div>}>
         {(data) => (
-          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', 'flex-direction': 'column', gap: 'var(--sp-6)' }}>
             <section>
-              <h2 style={{ 'font-size': '0.9rem', color: '#bbb' }}>Now Playing</h2>
-              <Show when={data().currently_playing} fallback={<div style={{ color: '#666' }}>Nothing playing.</div>}>
+              <h2 style={{ 'font-size': 'var(--fs-md)', color: 'var(--text-section)' }}>Now Playing</h2>
+              <Show when={data().currently_playing} fallback={<div style={{ color: 'var(--text-disabled)' }}>Nothing playing.</div>}>
                 {(t) => <TrackRow track={t()} />}
               </Show>
             </section>
             <section>
-              <h2 style={{ 'font-size': '0.9rem', color: '#bbb' }}>Next Up</h2>
-              <Show when={data().queue.length > 0} fallback={<div style={{ color: '#666' }}>Queue is empty.</div>}>
+              <h2 style={{ 'font-size': 'var(--fs-md)', color: 'var(--text-section)' }}>Next Up</h2>
+              <Show when={data().queue.length > 0} fallback={<div style={{ color: 'var(--text-disabled)' }}>Queue is empty.</div>}>
                 <For each={data().queue}>{(t, i) => <TrackRow track={t} index={i()} />}</For>
               </Show>
             </section>

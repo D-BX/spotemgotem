@@ -37,18 +37,18 @@ const Album: Component = () => {
   return (
     <Show
       when={resource.data()}
-      fallback={<div style={{ color: '#666' }}>Loading…</div>}
+      fallback={<div style={{ color: 'var(--text-disabled)' }}>Loading…</div>}
     >
       {(data) => (
         <div style={{ display: 'flex', 'flex-direction': 'column', height: '100%' }}>
-          <header style={{ display: 'flex', gap: '1rem', 'align-items': 'flex-end', 'margin-bottom': '1rem' }}>
+          <header style={{ display: 'flex', gap: 'var(--sp-5)', 'align-items': 'flex-end', 'margin-bottom': 'var(--sp-5)' }}>
             <Show when={data().album.images[0]?.url}>
-              {(src) => <img src={src()} alt="" width={160} height={160} style={{ 'border-radius': '0.5rem', 'object-fit': 'cover' }} />}
+              {(src) => <img src={src()} alt="" width={160} height={160} style={{ 'border-radius': 'var(--radius-md)', 'object-fit': 'cover' }} />}
             </Show>
             <div>
-              <div style={{ color: '#9aa', 'font-size': '0.8rem' }}>Album</div>
-              <h1 style={{ margin: '0.25rem 0' }}>{data().album.name}</h1>
-              <div style={{ color: '#888', 'font-size': '0.85rem' }}>
+              <div style={{ color: 'var(--text-subtle)', 'font-size': 'var(--fs-sm)' }}>Album</div>
+              <h1 style={{ margin: 'var(--sp-1) 0' }}>{data().album.name}</h1>
+              <div style={{ color: 'var(--text-muted)', 'font-size': 'var(--fs-smd)' }}>
                 {data().album.artists.map((a) => a.name).join(', ')} • {data().album.total_tracks} tracks
               </div>
             </div>

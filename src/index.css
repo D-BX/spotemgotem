@@ -1,0 +1,20 @@
+/* Minimal base reset. Theme token values are applied to :root at runtime by the
+   theme store (initThemes), so these var() references resolve on first paint. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}

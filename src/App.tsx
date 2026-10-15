@@ -82,7 +82,7 @@ const App: Component = () => {
     <>
       <Switch>
         <Match when={status() === 'loading'}>
-          <p style={{ 'font-family': 'system-ui, sans-serif', padding: '2rem' }}>
+          <p style={{ 'font-family': 'var(--font-sans)', padding: 'var(--sp-7)' }}>
             Loading…
           </p>
         </Match>
@@ -110,13 +110,13 @@ const App: Component = () => {
               left: '50%',
               transform: 'translateX(-50%)',
               'z-index': 1000,
-              'font-family': 'system-ui, sans-serif',
-              margin: '0.5rem',
-              padding: '0.5rem 1rem',
-              'border-radius': '0.5rem',
-              background: '#2a0d0d',
-              border: '1px solid #c0392b',
-              color: '#f5b7b1',
+              'font-family': 'var(--font-sans)',
+              margin: 'var(--sp-3)',
+              padding: 'var(--sp-3) var(--sp-5)',
+              'border-radius': 'var(--radius-md)',
+              background: 'var(--error-bg)',
+              border: '1px solid var(--error-border)',
+              color: 'var(--error-text)',
             }}
           >
             {msg()}

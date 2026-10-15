@@ -34,7 +34,7 @@ const Search: Component = () => {
   return (
     <div>
       <h1 style={{ 'margin-top': 0 }}>Search</h1>
-      <form onSubmit={onSubmit} style={{ 'margin-bottom': '1.5rem' }}>
+      <form onSubmit={onSubmit} style={{ 'margin-bottom': 'var(--sp-6)' }}>
         <input
           type="search"
           value={term()}
@@ -43,28 +43,28 @@ const Search: Component = () => {
           style={{
             width: '100%',
             'max-width': '28rem',
-            padding: '0.6rem 0.8rem',
-            'border-radius': '2rem',
-            border: '1px solid #333',
-            background: '#121212',
-            color: '#eee',
+            padding: 'var(--sp-3) var(--sp-4)',
+            'border-radius': 'var(--radius-lg)',
+            border: '1px solid var(--border-input)',
+            background: 'var(--bg-card)',
+            color: 'var(--text)',
           }}
         />
       </form>
 
       <Show when={results.loading()}>
-        <div style={{ color: '#666' }}>Searching…</div>
+        <div style={{ color: 'var(--text-disabled)' }}>Searching…</div>
       </Show>
       <Show when={results.error()}>
-        {(e) => <p style={{ color: '#c0392b' }}>{e().message}</p>}
+        {(e) => <p style={{ color: 'var(--error-border)' }}>{e().message}</p>}
       </Show>
 
       <Show when={results.data()}>
         {(res) => (
-          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '2rem' }}>
+          <div style={{ display: 'flex', 'flex-direction': 'column', gap: 'var(--sp-7)' }}>
             <Show when={res().tracks?.items.length}>
               <section>
-                <h2 style={{ 'font-size': '1rem', color: '#bbb' }}>Tracks</h2>
+                <h2 style={{ 'font-size': 'var(--fs-base)', color: 'var(--text-section)' }}>Tracks</h2>
                 <div style={{ display: 'flex', 'flex-direction': 'column' }}>
                   <For each={res().tracks?.items ?? []}>
                     {(t) => (
@@ -75,22 +75,22 @@ const Search: Component = () => {
                         style={{
                           display: 'flex',
                           'align-items': 'center',
-                          gap: '0.75rem',
-                          padding: '0.4rem 0.5rem',
+                          gap: 'var(--sp-4)',
+                          padding: 'var(--sp-2) var(--sp-3)',
                           cursor: 'pointer',
-                          'border-bottom': '1px solid #1e1e1e',
+                          'border-bottom': '1px solid var(--border)',
                         }}
                       >
                         <Show when={t.album.images[0]?.url}>
-                          {(src) => <img src={src()} alt="" width={36} height={36} style={{ 'border-radius': '0.25rem' }} />}
+                          {(src) => <img src={src()} alt="" width={36} height={36} style={{ 'border-radius': 'var(--radius-sm)' }} />}
                         </Show>
                         <div style={{ flex: 1, overflow: 'hidden' }}>
                           <div style={{ 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>{t.name}</div>
-                          <div style={{ color: '#9aa', 'font-size': '0.8rem', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>
+                          <div style={{ color: 'var(--text-subtle)', 'font-size': 'var(--fs-sm)', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>
                             {t.artists.map((a) => a.name).join(', ')}
                           </div>
                         </div>
-                        <span style={{ color: '#888' }}>{formatTime(t.duration_ms)}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>{formatTime(t.duration_ms)}</span>
                       </div>
                     )}
                   </For>
@@ -100,15 +100,15 @@ const Search: Component = () => {
 
             <Show when={res().albums?.items.length}>
               <section>
-                <h2 style={{ 'font-size': '1rem', color: '#bbb' }}>Albums</h2>
-                <div style={{ display: 'grid', 'grid-template-columns': 'repeat(auto-fill, minmax(9rem, 1fr))', gap: '1rem' }}>
+                <h2 style={{ 'font-size': 'var(--fs-base)', color: 'var(--text-section)' }}>Albums</h2>
+                <div style={{ display: 'grid', 'grid-template-columns': 'repeat(auto-fill, minmax(9rem, 1fr))', gap: 'var(--sp-5)' }}>
                   <For each={res().albums?.items ?? []}>
                     {(a) => (
-                      <A href={`/album/${a.id}`} style={{ 'text-decoration': 'none', color: '#eee' }}>
+                      <A href={`/album/${a.id}`} style={{ 'text-decoration': 'none', color: 'var(--text)' }}>
                         <Show when={a.images[0]?.url}>
-                          {(src) => <img src={src()} alt="" style={{ width: '100%', 'aspect-ratio': '1', 'border-radius': '0.25rem', 'object-fit': 'cover' }} />}
+                          {(src) => <img src={src()} alt="" style={{ width: '100%', 'aspect-ratio': '1', 'border-radius': 'var(--radius-sm)', 'object-fit': 'cover' }} />}
                         </Show>
-                        <div style={{ 'font-size': '0.85rem', 'margin-top': '0.35rem', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>{a.name}</div>
+                        <div style={{ 'font-size': 'var(--fs-smd)', 'margin-top': 'var(--sp-2)', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>{a.name}</div>
                       </A>
                     )}
                   </For>
@@ -118,15 +118,15 @@ const Search: Component = () => {
 
             <Show when={res().playlists?.items.length}>
               <section>
-                <h2 style={{ 'font-size': '1rem', color: '#bbb' }}>Playlists</h2>
-                <div style={{ display: 'grid', 'grid-template-columns': 'repeat(auto-fill, minmax(9rem, 1fr))', gap: '1rem' }}>
+                <h2 style={{ 'font-size': 'var(--fs-base)', color: 'var(--text-section)' }}>Playlists</h2>
+                <div style={{ display: 'grid', 'grid-template-columns': 'repeat(auto-fill, minmax(9rem, 1fr))', gap: 'var(--sp-5)' }}>
                   <For each={res().playlists?.items ?? []}>
                     {(p) => (
-                      <A href={`/playlist/${p.id}`} style={{ 'text-decoration': 'none', color: '#eee' }}>
+                      <A href={`/playlist/${p.id}`} style={{ 'text-decoration': 'none', color: 'var(--text)' }}>
                         <Show when={p.images[0]?.url}>
-                          {(src) => <img src={src()} alt="" style={{ width: '100%', 'aspect-ratio': '1', 'border-radius': '0.25rem', 'object-fit': 'cover' }} />}
+                          {(src) => <img src={src()} alt="" style={{ width: '100%', 'aspect-ratio': '1', 'border-radius': 'var(--radius-sm)', 'object-fit': 'cover' }} />}
                         </Show>
-                        <div style={{ 'font-size': '0.85rem', 'margin-top': '0.35rem', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>{p.name}</div>
+                        <div style={{ 'font-size': 'var(--fs-smd)', 'margin-top': 'var(--sp-2)', 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis' }}>{p.name}</div>
                       </A>
                     )}
                   </For>

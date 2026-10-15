@@ -10,13 +10,13 @@ const Login: Component = () => {
   };
 
   return (
-    <main style={{ 'font-family': 'system-ui, sans-serif', padding: '2rem' }}>
+    <main style={{ 'font-family': 'var(--font-sans)', padding: 'var(--sp-7)' }}>
       <h1>spotemgotem</h1>
       <p>A personal player for your Spotify library.</p>
       <button type="button" onClick={onConnect}>
         Connect with Spotify
       </button>
-      <p style={{ color: '#888', 'font-size': '0.8rem', 'margin-top': '2rem' }}>
+      <p style={{ color: 'var(--text-muted)', 'font-size': 'var(--fs-sm)', 'margin-top': 'var(--sp-7)' }}>
         Content and playback provided by Spotify. This app is not affiliated with
         or endorsed by Spotify.
       </p>

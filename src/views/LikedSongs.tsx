@@ -26,25 +26,25 @@ const LikedSongs: Component = () => {
 
   return (
     <div style={{ display: 'flex', 'flex-direction': 'column', height: '100%' }}>
-      <header style={{ 'margin-bottom': '1rem' }}>
-        <div style={{ color: '#9aa', 'font-size': '0.8rem' }}>Playlist</div>
-        <h1 style={{ margin: '0.25rem 0' }}>Liked Songs</h1>
+      <header style={{ 'margin-bottom': 'var(--sp-5)' }}>
+        <div style={{ color: 'var(--text-subtle)', 'font-size': 'var(--fs-sm)' }}>Playlist</div>
+        <h1 style={{ margin: 'var(--sp-1) 0' }}>Liked Songs</h1>
         <Show when={resource.data()}>
           {(list) => (
-            <div style={{ color: '#888', 'font-size': '0.85rem' }}>{list().length} tracks</div>
+            <div style={{ color: 'var(--text-muted)', 'font-size': 'var(--fs-smd)' }}>{list().length} tracks</div>
           )}
         </Show>
       </header>
       <Show
         when={resource.data()}
-        fallback={<div style={{ color: '#666' }}>Loading…</div>}
+        fallback={<div style={{ color: 'var(--text-disabled)' }}>Loading…</div>}
       >
         <div style={{ flex: 1, 'min-height': 0 }}>
           <TrackList tracks={rows()} onPlay={onPlay} height="100%" />
         </div>
       </Show>
       <Show when={resource.error()}>
-        {(e) => <p style={{ color: '#c0392b' }}>{e().message}</p>}
+        {(e) => <p style={{ color: 'var(--error-border)' }}>{e().message}</p>}
       </Show>
     </div>
   );

@@ -7,11 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@solidjs/router": "^0.15.3",
     "@tanstack/solid-virtual": "^3.11.2",
+    "fflate": "^0.8.3",
     "idb-keyval": "^6.2.1",
     "solid-js": "^1.9.3"
   },
@@ -19,6 +22,7 @@
     "@types/spotify-web-playback-sdk": "^0.1.19",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
-    "vite-plugin-solid": "^2.11.0"
+    "vite-plugin-solid": "^2.11.0",
+    "vitest": "^5.0.4"
   }
 }

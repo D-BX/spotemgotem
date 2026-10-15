@@ -59,14 +59,14 @@ const TrackList: Component<{
                       transform: `translateY(${row.start}px)`,
                       display: 'flex',
                       'align-items': 'center',
-                      gap: '0.75rem',
-                      padding: '0 0.75rem',
+                      gap: 'var(--sp-4)',
+                      padding: '0 var(--sp-4)',
                       cursor: 'pointer',
                       'box-sizing': 'border-box',
-                      'border-bottom': '1px solid #1e1e1e',
+                      'border-bottom': '1px solid var(--border)',
                     }}
                   >
-                    <span style={{ width: '2rem', color: '#888', 'text-align': 'right' }}>
+                    <span style={{ width: '2rem', color: 'var(--text-muted)', 'text-align': 'right' }}>
                       {row.index + 1}
                     </span>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -75,8 +75,8 @@ const TrackList: Component<{
                       </div>
                       <div
                         style={{
-                          color: '#9aa',
-                          'font-size': '0.8rem',
+                          color: 'var(--text-subtle)',
+                          'font-size': 'var(--fs-sm)',
                           'white-space': 'nowrap',
                           'text-overflow': 'ellipsis',
                           overflow: 'hidden',
@@ -85,7 +85,7 @@ const TrackList: Component<{
                         {t().artists.map((a) => a.name).join(', ')}
                       </div>
                     </div>
-                    <span style={{ color: '#888' }}>{formatTime(t().duration_ms)}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{formatTime(t().duration_ms)}</span>
                   </div>
                 )}
               </Show>
