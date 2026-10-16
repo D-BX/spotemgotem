@@ -6,27 +6,19 @@
 import { For, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { playerState } from '../player/playerStore';
 import {
-  togglePlay,
-  nextTrack,
-  previousTrack,
-  seek,
-  setVolume,
-  toggleShuffle,
-  cycleRepeat,
-} from '../player/spotifyPlayer';
-import {
   activeSkin,
   skinLibrary,
   loadSkinFromFile,
   setActiveSkin,
 } from '../skins/skinStore';
-import { setClassicOpen } from './uiState';
+import { setClassicOpen, type ClassicWindowProps } from './uiState';
 import { getSkinBitmaps, type SheetBitmaps } from '../skins/skinBitmaps';
-import { MAIN_WIDTH, MAIN_HEIGHT, PLACE, POSBAR_THUMB_TRAVEL, VOLUME_THUMB_TRAVEL } from '../skins/sprites';
+import { MAIN_WIDTH, MAIN_HEIGHT } from '../skins/sprites';
 import { drawMainWindow, type MainDrawState } from './draw';
-import { hitTest, trackFraction, type HotspotName } from './geometry';
+import { hitTest, type HotspotName } from './geometry';
+import { dispatchHotspot } from './controls';
 
-const ClassicPlayer = () => {
+const ClassicPlayer = (props: ClassicWindowProps) => {
   let canvas!: HTMLCanvasElement;
   const [bitmaps, setBitmaps] = createSignal<SheetBitmaps | null>(null);
   const [scale, setScale] = createSignal(1);
@@ -91,13 +83,13 @@ const ClassicPlayer = () => {
     raf = requestAnimationFrame(loop);
   };
   onMount(() => {
-    // Open big and centered so classic mode feels like it takes over the page,
-    // rather than a tiny widget in the corner.
-    const fit = Math.max(2, Math.min(4, Math.floor(window.innerWidth / 440)));
+    // Use the placement handed down by a parent (ClassicApp tiles its windows);
+    // otherwise open big and centered so a lone window still fills the view.
+    const fit = props.initialScale ?? Math.max(2, Math.min(4, Math.floor(window.innerWidth / 440)));
     setScale(fit);
     setPos({
-      x: Math.round((window.innerWidth - MAIN_WIDTH * fit) / 2),
-      y: Math.round(window.innerHeight * 0.16),
+      x: props.initialX ?? Math.round((window.innerWidth - MAIN_WIDTH * fit) / 2),
+      y: props.initialY ?? Math.round(window.innerHeight * 0.16),
     });
     raf = requestAnimationFrame(loop);
   });
@@ -111,46 +103,6 @@ const ClassicPlayer = () => {
       x: (e.clientX - rect.left) / scale(),
       y: (e.clientY - rect.top) / scale(),
     };
-  }
-
-  function dispatch(hot: HotspotName, nx: number): void {
-    switch (hot) {
-      case 'prev':
-        void previousTrack();
-        break;
-      case 'play':
-        void togglePlay();
-        break;
-      case 'pause':
-        void togglePlay();
-        break;
-      case 'stop':
-        void togglePlay();
-        break;
-      case 'next':
-        void nextTrack();
-        break;
-      case 'shuffle':
-        void toggleShuffle();
-        break;
-      case 'repeat':
-        void cycleRepeat();
-        break;
-      case 'posBar': {
-        if (playerState.durationMs > 0) {
-          const f = trackFraction(nx, PLACE.posBar.x, POSBAR_THUMB_TRAVEL);
-          void seek(Math.round(f * playerState.durationMs));
-        }
-        break;
-      }
-      case 'volume': {
-        const f = trackFraction(nx, PLACE.volume.x, VOLUME_THUMB_TRAVEL);
-        void setVolume(f);
-        break;
-      }
-      default:
-        break;
-    }
   }
 
   let dragging: 'window' | HotspotName | null = null;
@@ -175,7 +127,7 @@ const ClassicPlayer = () => {
     }
     dragging = hot;
     setPressed(hot);
-    dispatch(hot, x);
+    dispatchHotspot(hot, x);
   }
 
   function onPointerMove(e: PointerEvent): void {
@@ -188,7 +140,7 @@ const ClassicPlayer = () => {
     }
     if (dragging === 'posBar' || dragging === 'volume') {
       const { x } = toNative(e);
-      dispatch(dragging, x);
+      dispatchHotspot(dragging, x);
     }
   }
 

@@ -4,7 +4,7 @@
 // available; shuffle/repeat/start-by-URI go through the Web API.
 
 import { getValidAccessToken } from '../auth/spotifyAuth';
-import { apiPut } from '../api/client';
+import { apiPut, SpotifyApiError } from '../api/client';
 import {
   INITIAL_PLAYER_STATE,
   playerState,
@@ -222,16 +222,32 @@ export function toSpotifyUri(input: string): string {
   throw new Error('Unrecognized Spotify URI or link.');
 }
 
+/**
+ * Start playback on our Web SDK device. Spotify Connect drops an idle device from
+ * its list, after which `/me/player/play` returns 404 "Device not found". When
+ * that happens we re-transfer playback to our device and retry the start once.
+ */
+async function startPlayback(body: Record<string, unknown>): Promise<void> {
+  const deviceId = playerState.deviceId;
+  if (!deviceId) throw new Error('Player is not ready yet.');
+  try {
+    await apiPut('/me/player/play', { query: { device_id: deviceId }, body });
+  } catch (e) {
+    if (e instanceof SpotifyApiError && e.status === 404) {
+      await transferPlayback(deviceId);
+      await apiPut('/me/player/play', { query: { device_id: deviceId }, body });
+      return;
+    }
+    throw e;
+  }
+}
+
 /** Start playback of a track/album/playlist/artist URI on our device. */
 export async function playUri(input: string): Promise<void> {
-  if (!playerState.deviceId) throw new Error('Player is not ready yet.');
   const uri = toSpotifyUri(input);
   const type = uri.split(':')[1];
   const body = type === 'track' ? { uris: [uri] } : { context_uri: uri };
-  await apiPut('/me/player/play', {
-    query: { device_id: playerState.deviceId },
-    body,
-  });
+  await startPlayback(body);
 }
 
 /**
@@ -242,22 +258,14 @@ export async function playContext(
   contextUri: string,
   offsetUri?: string,
 ): Promise<void> {
-  if (!playerState.deviceId) throw new Error('Player is not ready yet.');
   const body: Record<string, unknown> = { context_uri: contextUri };
   if (offsetUri) body.offset = { uri: offsetUri };
-  await apiPut('/me/player/play', {
-    query: { device_id: playerState.deviceId },
-    body,
-  });
+  await startPlayback(body);
 }
 
 /** Play a single track immediately (no surrounding context). */
 export async function playTrack(trackUri: string): Promise<void> {
-  if (!playerState.deviceId) throw new Error('Player is not ready yet.');
-  await apiPut('/me/player/play', {
-    query: { device_id: playerState.deviceId },
-    body: { uris: [trackUri] },
-  });
+  await startPlayback({ uris: [trackUri] });
 }
 
 export function getDeviceId(): string | null {

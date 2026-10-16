@@ -32,6 +32,9 @@ const Album = lazy(() => import('./views/Album'));
 const LikedSongs = lazy(() => import('./views/LikedSongs'));
 const Search = lazy(() => import('./views/Search'));
 const Queue = lazy(() => import('./views/Queue'));
+// The standalone classic view renders bare (no modern Layout), so it sits outside
+// the Layout group below.
+const ClassicApp = lazy(() => import('./classic/ClassicApp'));
 
 async function loadProfile(): Promise<void> {
   const user = await getCurrentUser();
@@ -87,13 +90,18 @@ const App: Component = () => {
           </p>
         </Match>
         <Match when={status() === 'authed'}>
-          <Router root={Layout}>
-            <Route path="/" component={Library} />
-            <Route path="/search" component={Search} />
-            <Route path="/queue" component={Queue} />
-            <Route path="/collection/tracks" component={LikedSongs} />
-            <Route path="/playlist/:id" component={Playlist} />
-            <Route path="/album/:id" component={Album} />
+          <Router>
+            {/* Standalone skin-only app — no modern chrome. */}
+            <Route path="/classic" component={ClassicApp} />
+            {/* Modern UI: Layout is a pathless layout route wrapping these views. */}
+            <Route component={Layout}>
+              <Route path="/" component={Library} />
+              <Route path="/search" component={Search} />
+              <Route path="/queue" component={Queue} />
+              <Route path="/collection/tracks" component={LikedSongs} />
+              <Route path="/playlist/:id" component={Playlist} />
+              <Route path="/album/:id" component={Album} />
+            </Route>
           </Router>
         </Match>
         <Match when={status() === 'anonymous'}>

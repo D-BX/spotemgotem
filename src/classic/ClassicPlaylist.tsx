@@ -8,7 +8,7 @@ import { playTrack } from '../player/spotifyPlayer';
 import { getQueue } from '../api/spotify';
 import type { Track } from '../api/types';
 import { activeSkin } from '../skins/skinStore';
-import { setPlaylistOpen } from './uiState';
+import { setPlaylistOpen, type ClassicWindowProps } from './uiState';
 import { drawPlaylist, type PlaylistRow } from './draw';
 import {
   PLAYLIST_WIDTH,
@@ -32,19 +32,20 @@ function toRows(tracks: Track[]): PlaylistRow[] {
   return tracks.map((t) => ({ label: `${t.artists.map((a) => a.name).join(', ')} - ${t.name}` }));
 }
 
-const ClassicPlaylist = () => {
+const ClassicPlaylist = (props: ClassicWindowProps) => {
   let canvas!: HTMLCanvasElement;
   const [pos, setPos] = createSignal({ x: 24, y: 220 });
   const [scale, setScale] = createSignal(1);
   const [scrollTop, setScrollTop] = createSignal(0);
 
   onMount(() => {
-    // Match the main window's take-over sizing and sit just below it, centered.
-    const fit = Math.max(2, Math.min(4, Math.floor(window.innerWidth / 440)));
+    // Use a parent-provided placement when tiled; otherwise match the main
+    // window's take-over sizing and sit just below it, centered.
+    const fit = props.initialScale ?? Math.max(2, Math.min(4, Math.floor(window.innerWidth / 440)));
     setScale(fit);
     setPos({
-      x: Math.round((window.innerWidth - PLAYLIST_WIDTH * fit) / 2),
-      y: Math.round(window.innerHeight * 0.16) + MAIN_WINDOW_STACK_OFFSET * fit,
+      x: props.initialX ?? Math.round((window.innerWidth - PLAYLIST_WIDTH * fit) / 2),
+      y: props.initialY ?? (Math.round(window.innerHeight * 0.16) + MAIN_WINDOW_STACK_OFFSET * fit),
     });
   });
 

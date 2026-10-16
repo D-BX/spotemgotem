@@ -1,0 +1,19 @@
+{
+  "name": "spotemgotem — Classic",
+  "short_name": "spotemgotem",
+  "description": "A classic skinnable mini player for your music.",
+  "start_url": "/classic",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0c",
+  "theme_color": "#141418",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

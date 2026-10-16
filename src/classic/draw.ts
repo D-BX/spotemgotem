@@ -175,12 +175,15 @@ export interface PlaylistRow {
   label: string;
 }
 
-export function drawPlaylist(
+/** Shared pledit-colored list window used by the queue and library windows. */
+function drawRowList(
   ctx: CanvasRenderingContext2D,
   skin: Skin,
+  title: string,
   rows: PlaylistRow[],
   currentIndex: number,
   scrollTop: number,
+  footer: string,
 ): void {
   const { normal, current, normalBg, selectedBg, font } = skin.pledit;
   ctx.clearRect(0, 0, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
@@ -193,7 +196,7 @@ export function drawPlaylist(
   ctx.fillStyle = current;
   ctx.font = `bold 11px ${font}, sans-serif`;
   ctx.textBaseline = 'middle';
-  ctx.fillText('Playlist', 8, PLAYLIST_TITLE_H / 2);
+  ctx.fillText(title, 8, PLAYLIST_TITLE_H / 2);
 
   // Rows.
   const listTop = PLAYLIST_TITLE_H;
@@ -223,5 +226,25 @@ export function drawPlaylist(
   ctx.fillRect(0, listBottom, PLAYLIST_WIDTH, PLAYLIST_FOOTER_H);
   ctx.fillStyle = current;
   ctx.font = `11px ${font}, sans-serif`;
-  ctx.fillText(`${rows.length} items`, 8, listBottom + PLAYLIST_FOOTER_H / 2);
+  ctx.fillText(footer, 8, listBottom + PLAYLIST_FOOTER_H / 2);
+}
+
+export function drawPlaylist(
+  ctx: CanvasRenderingContext2D,
+  skin: Skin,
+  rows: PlaylistRow[],
+  currentIndex: number,
+  scrollTop: number,
+): void {
+  drawRowList(ctx, skin, 'Playlist', rows, currentIndex, scrollTop, `${rows.length} items`);
+}
+
+export function drawLibrary(
+  ctx: CanvasRenderingContext2D,
+  skin: Skin,
+  rows: PlaylistRow[],
+  currentIndex: number,
+  scrollTop: number,
+): void {
+  drawRowList(ctx, skin, 'Media Library', rows, currentIndex, scrollTop, `${rows.length} playlists`);
 }
