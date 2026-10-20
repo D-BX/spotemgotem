@@ -58,7 +58,7 @@ const Playlist: Component = () => {
                 {(d) => <div style={{ color: 'var(--text-subtle)', 'font-size': 'var(--fs-md)' }}>{d()}</div>}
               </Show>
               <div style={{ color: 'var(--text-muted)', 'font-size': 'var(--fs-smd)', 'margin-top': 'var(--sp-1)' }}>
-                {data().detail.owner.display_name ?? 'Unknown'} • {data().detail.tracks.total} tracks
+                {data().detail.owner.display_name ?? 'Unknown'} • {data().detail.items?.total ?? rows().length} tracks
               </div>
             </div>
           </header>

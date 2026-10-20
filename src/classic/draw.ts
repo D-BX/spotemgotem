@@ -24,15 +24,22 @@ import {
   CHAR_H,
   charRect,
   digitRect,
+  PLEDIT_SPRITES,
+  PLEDIT,
   type Rect,
 } from '../skins/sprites';
 import type { HotspotName } from './geometry';
 import {
   PLAYLIST_WIDTH,
   PLAYLIST_HEIGHT,
-  PLAYLIST_TITLE_H,
-  PLAYLIST_FOOTER_H,
-  PLAYLIST_ROW_H,
+  PL_ROW_H,
+  PL_TEXT_PAD,
+  PL_FONT_PX,
+  plInterior,
+  plNavRect,
+  plListRect,
+  plVisibleRows,
+  plScrollThumb,
 } from './geometry';
 
 export interface MainDrawState {
@@ -114,6 +121,198 @@ export function drawMainWindow(
   drawTitle(ctx, bmps, skin, state.title, titleScrollPx);
 }
 
+// ===========================================================================
+// Playlist window (pledit.bmp)
+// ===========================================================================
+// The browser panel is the authentic Winamp playlist-editor window: its frame,
+// edges, corners, and scrollbar thumb are blitted from the skin's pledit.bmp,
+// and the list text is drawn in the skin's pledit font/colours. A thin tab row
+// (Queue / Playlists / Liked / Skins) and a couple of text actions live inside
+// the interior so the one window covers everything the old CSS panel did.
+
+export interface PlRowVM {
+  text: string;
+  current: boolean; // the currently-playing track (highlighted)
+}
+
+export interface PlaylistViewModel {
+  active: boolean; // focused -> selected (brighter) frame artwork
+  title: string; // centered window title
+  tabs: { label: string; active: boolean }[];
+  actions: { label: string }[]; // right-aligned text buttons in the nav row
+  rows: PlRowVM[];
+  firstRow: number; // scroll offset, in whole rows
+  notice: string | null; // shown centered instead of rows (loading/empty/error)
+}
+
+/** Rects (native px) of the text controls draw painted, so the component can
+ *  hit-test clicks against exactly what's on screen. */
+export interface PlaylistHitRegions {
+  tabs: Rect[]; // parallel to vm.tabs
+  actions: Rect[]; // parallel to vm.actions
+}
+
+function pleditFont(skin: Skin, px = PL_FONT_PX, bold = false): string {
+  const weight = bold ? 'bold ' : '';
+  return `${weight}${px}px ${skin.pledit.font}, "MS Sans Serif", Tahoma, sans-serif`;
+}
+
+/** Truncate with an ellipsis so text never spills past `maxW`. */
+function fitText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
+  if (maxW <= 0) return '';
+  if (ctx.measureText(text).width <= maxW) return text;
+  let t = text;
+  while (t.length > 0 && ctx.measureText(`${t}…`).width > maxW) t = t.slice(0, -1);
+  return `${t}…`;
+}
+
+/** Blit `s` horizontally from x0 up to (not past) x1, clipping the final tile. */
+function tileRow(ctx: CanvasRenderingContext2D, bmp: ImageBitmap, s: Rect, x0: number, x1: number, dy: number): void {
+  for (let x = x0; x < x1; x += s.w) {
+    const w = Math.min(s.w, x1 - x);
+    ctx.drawImage(bmp, s.x, s.y, w, s.h, x, dy, w, s.h);
+  }
+}
+
+/** Blit `s` vertically from y0 up to (not past) y1, clipping the final tile. */
+function tileCol(ctx: CanvasRenderingContext2D, bmp: ImageBitmap, s: Rect, dx: number, y0: number, y1: number): void {
+  for (let y = y0; y < y1; y += s.h) {
+    const h = Math.min(s.h, y1 - y);
+    ctx.drawImage(bmp, s.x, s.y, s.w, h, dx, y, s.w, h);
+  }
+}
+
+export function drawPlaylistWindow(
+  ctx: CanvasRenderingContext2D,
+  bmps: SheetBitmaps,
+  skin: Skin,
+  vm: PlaylistViewModel,
+  w: number = PLAYLIST_WIDTH,
+  h: number = PLAYLIST_HEIGHT,
+): PlaylistHitRegions {
+  const pal = skin.pledit;
+  const sel = vm.active;
+  const sp = PLEDIT_SPRITES;
+  const interior = plInterior(w, h);
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Interior background colour (behind the list + nav).
+  ctx.fillStyle = pal.normalBg;
+  ctx.fillRect(interior.x, interior.y, interior.w, interior.h);
+
+  // --- Title row: corners + repeating top tile + centered title ------------
+  const titleY = 0;
+  tileRow(ctx, bmps.pledit, sel ? sp.topTileSelected : sp.topTile, PLEDIT.TOP_TILE_W, w - PLEDIT.TOP_TILE_W, titleY);
+  blit(ctx, bmps.pledit, sel ? sp.topLeftSelected : sp.topLeft, 0, titleY);
+  blit(ctx, bmps.pledit, sel ? sp.topRightSelected : sp.topRight, w - PLEDIT.TOP_TILE_W, titleY);
+  const titleX = Math.round((w - PLEDIT.TITLE_BAR_W) / 2);
+  blit(ctx, bmps.pledit, sel ? sp.titleBarSelected : sp.titleBar, titleX, titleY);
+
+  // --- Side edges ----------------------------------------------------------
+  tileCol(ctx, bmps.pledit, sp.leftTile, 0, PLEDIT.TITLE_H, h - PLEDIT.BOTTOM_H);
+  tileCol(ctx, bmps.pledit, sp.rightTile, w - PLEDIT.RIGHT_W, PLEDIT.TITLE_H, h - PLEDIT.BOTTOM_H);
+
+  // --- Bottom row: two corners span the 275px width exactly ----------------
+  const bottomY = h - PLEDIT.BOTTOM_H;
+  blit(ctx, bmps.pledit, sp.bottomLeft, 0, bottomY);
+  blit(ctx, bmps.pledit, sp.bottomRight, w - sp.bottomRight.w, bottomY);
+
+  // --- Window title text, centered over the title bar art ------------------
+  if (vm.title) {
+    ctx.font = pleditFont(skin, PL_FONT_PX, true);
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = pal.current;
+    const t = fitText(ctx, vm.title.toUpperCase(), PLEDIT.TITLE_BAR_W - 10);
+    ctx.fillText(t, w / 2, PLEDIT.TITLE_H / 2 + 1);
+    ctx.textAlign = 'left';
+  }
+
+  // --- Nav row: tabs on the left, actions on the right ---------------------
+  const nav = plNavRect(w, h);
+  const regions: PlaylistHitRegions = { tabs: [], actions: [] };
+  ctx.font = pleditFont(skin, PL_FONT_PX, true);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  const navMidY = nav.y + nav.h / 2 + 1;
+  const tabPadX = 5;
+
+  let tx = nav.x + PL_TEXT_PAD;
+  vm.tabs.forEach((tab) => {
+    const tw = ctx.measureText(tab.label).width;
+    const slot: Rect = { x: tx, y: nav.y, w: tw + tabPadX * 2, h: nav.h };
+    if (tab.active) {
+      ctx.fillStyle = pal.selectedBg;
+      ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
+    }
+    ctx.fillStyle = tab.active ? pal.current : pal.normal;
+    ctx.fillText(tab.label, slot.x + tabPadX, navMidY);
+    regions.tabs.push(slot);
+    tx += slot.w;
+  });
+
+  // Actions laid out from the right edge inward.
+  let ax = nav.x + nav.w - PL_TEXT_PAD;
+  vm.actions.forEach((action) => {
+    const aw = ctx.measureText(action.label).width + tabPadX * 2;
+    const slot: Rect = { x: ax - aw, y: nav.y, w: aw, h: nav.h };
+    ctx.fillStyle = pal.normal;
+    ctx.fillText(action.label, slot.x + tabPadX, navMidY);
+    regions.actions.push(slot);
+    ax -= aw;
+  });
+
+  // Thin separator under the nav row.
+  ctx.fillStyle = pal.selectedBg;
+  ctx.fillRect(nav.x, nav.y + nav.h - 1, nav.w, 1);
+
+  // --- List area -----------------------------------------------------------
+  const list = plListRect(w, h);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(list.x, list.y, list.w, list.h);
+  ctx.clip();
+
+  if (vm.notice) {
+    ctx.font = pleditFont(skin, PL_FONT_PX);
+    ctx.fillStyle = pal.normal;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(vm.notice, list.x + list.w / 2, list.y + list.h / 2);
+    ctx.textAlign = 'left';
+  } else {
+    ctx.font = pleditFont(skin, PL_FONT_PX);
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    const visible = plVisibleRows(w, h);
+    const textMaxW = list.w - PL_TEXT_PAD * 2;
+    for (let i = 0; i < visible; i++) {
+      const idx = vm.firstRow + i;
+      const row = vm.rows[idx];
+      if (!row) break;
+      const ry = list.y + i * PL_ROW_H;
+      if (row.current) {
+        ctx.fillStyle = pal.selectedBg;
+        ctx.fillRect(list.x, ry, list.w, PL_ROW_H);
+      }
+      ctx.fillStyle = row.current ? pal.current : pal.normal;
+      ctx.fillText(fitText(ctx, row.text, textMaxW), list.x + PL_TEXT_PAD, ry + PL_ROW_H / 2 + 1);
+    }
+  }
+  ctx.restore();
+
+  // --- Scrollbar thumb (only when the list overflows) ----------------------
+  const total = vm.rows.length;
+  const maxScroll = Math.max(0, total - plVisibleRows(w, h));
+  if (maxScroll > 0 && !vm.notice) {
+    const thumb = plScrollThumb(vm.firstRow, maxScroll, w, h);
+    blit(ctx, bmps.pledit, sel ? sp.scrollHandleSelected : sp.scrollHandle, thumb.x, thumb.y);
+  }
+
+  return regions;
+}
+
 function drawTime(ctx: CanvasRenderingContext2D, bmps: SheetBitmaps, positionMs: number): void {
   const totalSec = Math.max(0, Math.floor(positionMs / 1000));
   const mm = Math.min(99, Math.floor(totalSec / 60));
@@ -167,84 +366,4 @@ function drawTitle(
     }
   }
   ctx.restore();
-}
-
-// --- Playlist window --------------------------------------------------------
-
-export interface PlaylistRow {
-  label: string;
-}
-
-/** Shared pledit-colored list window used by the queue and library windows. */
-function drawRowList(
-  ctx: CanvasRenderingContext2D,
-  skin: Skin,
-  title: string,
-  rows: PlaylistRow[],
-  currentIndex: number,
-  scrollTop: number,
-  footer: string,
-): void {
-  const { normal, current, normalBg, selectedBg, font } = skin.pledit;
-  ctx.clearRect(0, 0, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
-
-  // Background + simple chrome.
-  ctx.fillStyle = normalBg;
-  ctx.fillRect(0, 0, PLAYLIST_WIDTH, PLAYLIST_HEIGHT);
-  ctx.fillStyle = selectedBg;
-  ctx.fillRect(0, 0, PLAYLIST_WIDTH, PLAYLIST_TITLE_H);
-  ctx.fillStyle = current;
-  ctx.font = `bold 11px ${font}, sans-serif`;
-  ctx.textBaseline = 'middle';
-  ctx.fillText(title, 8, PLAYLIST_TITLE_H / 2);
-
-  // Rows.
-  const listTop = PLAYLIST_TITLE_H;
-  const listBottom = PLAYLIST_HEIGHT - PLAYLIST_FOOTER_H;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, listTop, PLAYLIST_WIDTH, listBottom - listTop);
-  ctx.clip();
-  ctx.font = `11px ${font}, sans-serif`;
-  const first = Math.floor(scrollTop / PLAYLIST_ROW_H);
-  const visible = Math.ceil((listBottom - listTop) / PLAYLIST_ROW_H) + 1;
-  for (let i = first; i < Math.min(rows.length, first + visible); i++) {
-    const rowY = listTop + i * PLAYLIST_ROW_H - scrollTop;
-    const isCurrent = i === currentIndex;
-    if (isCurrent) {
-      ctx.fillStyle = selectedBg;
-      ctx.fillRect(0, rowY, PLAYLIST_WIDTH, PLAYLIST_ROW_H);
-    }
-    ctx.fillStyle = isCurrent ? current : normal;
-    const label = `${i + 1}. ${rows[i]!.label}`;
-    ctx.fillText(label, 4, rowY + PLAYLIST_ROW_H / 2, PLAYLIST_WIDTH - 8);
-  }
-  ctx.restore();
-
-  // Footer strip.
-  ctx.fillStyle = selectedBg;
-  ctx.fillRect(0, listBottom, PLAYLIST_WIDTH, PLAYLIST_FOOTER_H);
-  ctx.fillStyle = current;
-  ctx.font = `11px ${font}, sans-serif`;
-  ctx.fillText(footer, 8, listBottom + PLAYLIST_FOOTER_H / 2);
-}
-
-export function drawPlaylist(
-  ctx: CanvasRenderingContext2D,
-  skin: Skin,
-  rows: PlaylistRow[],
-  currentIndex: number,
-  scrollTop: number,
-): void {
-  drawRowList(ctx, skin, 'Playlist', rows, currentIndex, scrollTop, `${rows.length} items`);
-}
-
-export function drawLibrary(
-  ctx: CanvasRenderingContext2D,
-  skin: Skin,
-  rows: PlaylistRow[],
-  currentIndex: number,
-  scrollTop: number,
-): void {
-  drawRowList(ctx, skin, 'Media Library', rows, currentIndex, scrollTop, `${rows.length} playlists`);
 }

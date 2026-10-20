@@ -32,8 +32,9 @@ const Album = lazy(() => import('./views/Album'));
 const LikedSongs = lazy(() => import('./views/LikedSongs'));
 const Search = lazy(() => import('./views/Search'));
 const Queue = lazy(() => import('./views/Queue'));
-// The standalone classic view renders bare (no modern Layout), so it sits outside
-// the Layout group below.
+// The classic experience is the default landing view: it renders bare (no modern
+// Layout), so it sits outside the Layout group below. The modern UI lives under
+// `/modern`.
 const ClassicApp = lazy(() => import('./classic/ClassicApp'));
 
 async function loadProfile(): Promise<void> {
@@ -91,11 +92,13 @@ const App: Component = () => {
         </Match>
         <Match when={status() === 'authed'}>
           <Router>
-            {/* Standalone skin-only app — no modern chrome. */}
+            {/* Classic skin experience is the default; `/classic` is a stable alias
+                (the PWA start_url) that resolves to the same view. */}
+            <Route path="/" component={ClassicApp} />
             <Route path="/classic" component={ClassicApp} />
             {/* Modern UI: Layout is a pathless layout route wrapping these views. */}
             <Route component={Layout}>
-              <Route path="/" component={Library} />
+              <Route path="/modern" component={Library} />
               <Route path="/search" component={Search} />
               <Route path="/queue" component={Queue} />
               <Route path="/collection/tracks" component={LikedSongs} />

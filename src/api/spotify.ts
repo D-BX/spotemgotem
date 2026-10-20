@@ -22,36 +22,66 @@ import type {
 const PAGE = 50;
 const TRACK_PAGE = 100;
 
-/** Walk limit/offset pages until exhausted, collecting all items. */
+// A hard ceiling on how many pages we'll walk for one list. Even a huge library
+// (10k+ saved tracks) stays well under this; it exists only so a malformed
+// response (e.g. a `next` that never clears, or a missing `total`) can't spin
+// the loop forever — the real-world symptom that left Playlists/Liked stuck on
+// "Loading…". We stop loudly rather than hang.
+const MAX_PAGES = 400;
+
+/**
+ * Walk limit/offset pages until exhausted, collecting all items. An optional
+ * `onBatch` fires with each page's items as it arrives, so callers can render
+ * incrementally instead of blocking on the whole library — this is what keeps
+ * large Playlists/Liked lists from sitting on "Loading…" while every page is
+ * fetched serially.
+ */
 async function getAllPages<T>(
   path: string,
   query: Record<string, string>,
   pageSize: number,
+  onBatch?: (items: T[]) => void,
 ): Promise<T[]> {
   const items: T[] = [];
   let offset = 0;
-  for (;;) {
+  for (let pageNum = 0; ; pageNum++) {
     const page = await apiGet<Paging<T>>(path, {
       ...query,
       limit: String(pageSize),
       offset: String(offset),
     });
-    items.push(...page.items);
-    offset += page.items.length;
-    if (!page.next || page.items.length === 0 || offset >= page.total) break;
+    const batch = page.items ?? [];
+    items.push(...batch);
+    if (batch.length > 0) onBatch?.(batch);
+    offset += batch.length;
+    if (!page.next || batch.length === 0) break;
+    // Guard against a missing `total` (can't rely on offset >= total then).
+    if (typeof page.total === 'number' && offset >= page.total) break;
+    if (pageNum + 1 >= MAX_PAGES) {
+      console.warn(
+        `getAllPages(${path}) hit the ${MAX_PAGES}-page safety cap; ` +
+          `stopping with ${items.length} items.`,
+      );
+      break;
+    }
   }
   return items;
 }
 
-/** Unwrap a 2026 `item`-wrapped track entry, failing loudly if the shape is off. */
+/**
+ * Unwrap a track entry, failing loudly if the shape is off. Playlist items
+ * (GET /playlists/{id}/items) nest the track under `item`; saved ("liked")
+ * tracks (GET /me/tracks) use `track`. Accept whichever is present.
+ */
 function entryTrack(entry: TrackEntry): Track {
-  if (!entry || !entry.item) {
+  const track = entry?.item ?? entry?.track;
+  if (!track) {
     throw new Error(
-      `Expected an 'item' field on a track entry (2026 shape). Got keys: ` +
+      `Expected an 'item' or 'track' field on a track entry. Got keys: ` +
         `${entry ? Object.keys(entry).join(', ') : 'null'}`,
     );
   }
-  return entry.item;
+  return track;
 }
 
 export function getCurrentUser(): Promise<SpotifyUser> {
@@ -67,8 +97,9 @@ export function getPlaylist(id: string): Promise<PlaylistDetail> {
 }
 
 export async function getPlaylistTracks(id: string): Promise<Track[]> {
+  // Feb-2026: /playlists/{id}/tracks was removed in favour of /items.
   const entries = await getAllPages<TrackEntry>(
-    `/playlists/${id}/tracks`,
+    `/playlists/${id}/items`,
     {},
     TRACK_PAGE,
   );
@@ -78,6 +109,36 @@ export async function getPlaylistTracks(id: string): Promise<Track[]> {
 export async function getSavedTracks(): Promise<Track[]> {
   const entries = await getAllPages<TrackEntry>('/me/tracks', {}, PAGE);
   return entries.map(entryTrack);
+}
+
+// --- Streaming variants ----------------------------------------------------
+// These report each page as it arrives so a caller can show the first results
+// immediately and grow the list, rather than waiting for the entire library.
+
+/** Stream the user's playlists page-by-page; resolves when all pages are in. */
+export async function streamMyPlaylists(
+  onBatch: (playlists: PlaylistSummary[]) => void,
+): Promise<void> {
+  await getAllPages<PlaylistSummary>('/me/playlists', {}, PAGE, onBatch);
+}
+
+/** Stream the user's saved ("liked") tracks page-by-page. */
+export async function streamSavedTracks(
+  onBatch: (tracks: Track[]) => void,
+): Promise<void> {
+  await getAllPages<TrackEntry>('/me/tracks', {}, PAGE, (entries) =>
+    onBatch(entries.map(entryTrack)),
+  );
+}
+
+/** Stream a playlist's tracks page-by-page. */
+export async function streamPlaylistTracks(
+  id: string,
+  onBatch: (tracks: Track[]) => void,
+): Promise<void> {
+  await getAllPages<TrackEntry>(`/playlists/${id}/items`, {}, TRACK_PAGE, (entries) =>
+    onBatch(entries.map(entryTrack)),
+  );
 }
 
 export async function getSavedAlbums(): Promise<AlbumSummary[]> {

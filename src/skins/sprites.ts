@@ -153,3 +153,41 @@ export function charRect(ch: string): Rect {
   const cell = TEXT_MAP[upper] ?? TEXT_MAP[' ']!;
   return r(cell[0] * CHAR_W, cell[1] * CHAR_H, CHAR_W, CHAR_H);
 }
+
+// --- Playlist window (pledit.bmp) ------------------------------------------
+// Source-sheet rects for the classic Winamp playlist-editor window, ported from
+// Webamp's skinSprites (MIT) as a coordinate reference. The window is assembled
+// from a 20px title row (corners + centered title + repeating top tile), tiled
+// left/right edges, and a 38px bottom row (two corners that span the 275px width
+// exactly). `*Selected` variants are the focused (active-window) artwork.
+
+export const PLEDIT_SPRITES = {
+  topTile: r(127, 21, 25, 20),
+  topTileSelected: r(127, 0, 25, 20),
+  topLeft: r(0, 21, 25, 20),
+  topLeftSelected: r(0, 0, 25, 20),
+  titleBar: r(26, 21, 100, 20),
+  titleBarSelected: r(26, 0, 100, 20),
+  topRight: r(153, 21, 25, 20),
+  topRightSelected: r(153, 0, 25, 20),
+  leftTile: r(0, 42, 12, 29),
+  rightTile: r(31, 42, 20, 29),
+  bottomTile: r(179, 0, 25, 38),
+  bottomLeft: r(0, 72, 125, 38),
+  bottomRight: r(126, 72, 150, 38),
+  scrollHandle: r(52, 53, 8, 18),
+  scrollHandleSelected: r(61, 53, 8, 18),
+} as const;
+
+/** Fixed pledit-window piece dimensions (native px), shared by draw + hit-test. */
+export const PLEDIT = {
+  TITLE_H: 20,
+  BOTTOM_H: 38,
+  LEFT_W: 12,
+  RIGHT_W: 20,
+  TITLE_BAR_W: 100,
+  TOP_TILE_W: 25,
+  SIDE_TILE_H: 29,
+  SCROLL_W: 8,
+  SCROLL_H: 18,
+} as const;

@@ -12,15 +12,6 @@ import { parseSkin } from './skinParser';
 import { createDefaultSkin } from './defaultSkin';
 import type { Skin } from './types';
 
-// The open-state signals live in a lightweight module so the app shell can toggle
-// classic mode without importing this (fflate-bearing) store.
-export {
-  classicOpen,
-  setClassicOpen,
-  playlistOpen,
-  setPlaylistOpen,
-} from '../classic/uiState';
-
 const store: UseStore = createStore('spotemgotem-skins', 'wsz');
 
 const KEY_ACTIVE = 'skin:active'; // string id of the active skin

@@ -46,11 +46,11 @@ const Layout: Component<RouteSectionProps> = (props) => {
       >
         <div style={{ 'font-weight': 'bold', 'margin-bottom': 'var(--sp-5)' }}>spotemgotem</div>
         <div style={{ display: 'flex', 'flex-direction': 'column', gap: 'var(--sp-3)' }}>
-          <A href="/" end>Home</A>
+          <A href="/modern" end>Home</A>
           <A href="/search">Search</A>
           <A href="/queue">Queue</A>
           <A href="/collection/tracks">Liked Songs</A>
-          <A href="/classic">Classic App</A>
+          <A href="/">Classic App</A>
         </div>
         <hr style={{ 'border-color': 'var(--border)', margin: 'var(--sp-5) 0' }} />
         <div style={{ color: 'var(--text-muted)', 'font-size': 'var(--fs-xs)', 'margin-bottom': 'var(--sp-3)' }}>

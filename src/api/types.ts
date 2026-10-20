@@ -47,10 +47,15 @@ export interface Track {
   album: AlbumRef;
 }
 
-/** A playlist/library track entry. 2026 wraps the track under `item`. */
+/**
+ * A playlist/library track entry. The Feb-2026 migration renamed the track field
+ * to `item` *for the Playlist object only* (GET /playlists/{id}/items). Saved
+ * ("liked") tracks from GET /me/tracks still use `track`. Accept either.
+ */
 export interface TrackEntry {
   added_at: string | null;
-  item: Track;
+  item?: Track;
+  track?: Track;
 }
 
 export interface PlaylistSummary {
@@ -59,7 +64,10 @@ export interface PlaylistSummary {
   name: string;
   images: SpotifyImage[];
   owner: { display_name: string | null };
-  tracks: { total: number };
+  // Feb-2026 renamed the Playlist track-count object `tracks` → `items`. It is
+  // absent for playlists the user doesn't own or collaborate on, so access it
+  // defensively (e.g. `items?.total`).
+  items?: { total: number } | null;
 }
 
 export interface PlaylistDetail extends PlaylistSummary {

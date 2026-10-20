@@ -7,6 +7,7 @@
 import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import ClassicPipPlayer from './ClassicPipPlayer';
+import { desktop } from './desktop';
 
 // Native main-window size; the PiP window opens at 2x so the skin is legible.
 import { MAIN_WIDTH, MAIN_HEIGHT } from '../skins/sprites';
@@ -15,7 +16,13 @@ const [pipOpen, setPipOpen] = createSignal(false);
 export const isPipOpen = pipOpen;
 
 export function pipSupported(): boolean {
-  return typeof window !== 'undefined' && 'documentPictureInPicture' in window;
+  if (typeof window === 'undefined') return false;
+  // Document PiP is a browser-tab feature: the API object exists in the Electron
+  // window but requestWindow() throws ("no window") there, and a pop-out mini
+  // player is redundant when the whole app is already its own small window. So
+  // we only offer "Pop out" in a real browser / installed PWA.
+  if (desktop) return false;
+  return 'documentPictureInPicture' in window;
 }
 
 let pipWindow: Window | null = null;

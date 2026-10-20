@@ -25,6 +25,40 @@ let player: Spotify.Player | null = null;
 let ticker: ReturnType<typeof setInterval> | undefined;
 let sdkLoad: Promise<void> | null = null;
 
+// Set when playback can't work at all (no Widevine/EME). We keep the reason so a
+// later "play" click reports the real cause instead of "Player is not ready yet".
+let unavailableReason: string | null = null;
+
+/**
+ * The Spotify Web Playback SDK decrypts audio through EME/Widevine. If the key
+ * system isn't available (stock Electron with no CDM, or the castlabs CDM failed
+ * to install) the SDK throws an uncaught EMEError and never becomes ready. We
+ * probe first so we can show a clear message instead of a mysterious failure.
+ */
+async function assertWidevine(): Promise<void> {
+  const nav = navigator as Navigator & {
+    requestMediaKeySystemAccess?: Navigator['requestMediaKeySystemAccess'];
+  };
+  const probe = nav.requestMediaKeySystemAccess?.bind(nav);
+  if (!probe) {
+    throw new Error('This runtime has no EME support, so Spotify audio cannot play.');
+  }
+  try {
+    await probe('com.widevine.alpha', [
+      {
+        initDataTypes: ['cenc'],
+        audioCapabilities: [{ contentType: 'audio/mp4;codecs="mp4a.40.2"' }],
+      },
+    ]);
+  } catch {
+    throw new Error(
+      'Widevine DRM is unavailable, so Spotify audio cannot play. In the desktop ' +
+        'app the Widevine CDM failed to install — check your network and relaunch ' +
+        '(it often installs in the background and works on the next start).',
+    );
+  }
+}
+
 /** Inject the SDK script once and resolve when the global is ready. */
 function loadSdk(): Promise<void> {
   if (sdkLoad) return sdkLoad;
@@ -97,9 +131,25 @@ async function transferPlayback(deviceId: string): Promise<void> {
   await apiPut('/me/player', { body: { device_ids: [deviceId], play: false } });
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Load, create, wire, and connect the player. Safe to call multiple times. */
 export async function initializePlayer(): Promise<void> {
   if (player) return;
+
+  // Fail clearly and early if DRM is missing, rather than letting the SDK throw
+  // an uncaught EMEError and leave the device perpetually "not ready".
+  try {
+    await assertWidevine();
+    unavailableReason = null;
+  } catch (e) {
+    unavailableReason = e instanceof Error ? e.message : String(e);
+    setPlayerState('error', unavailableReason);
+    return;
+  }
+
   await loadSdk();
 
   player = new window.Spotify.Player({
@@ -154,6 +204,7 @@ export function disconnectPlayer(): void {
     player = null;
   }
   sdkLoad = null;
+  unavailableReason = null;
   updateMediaMetadata(null);
   setPlayerState({ ...INITIAL_PLAYER_STATE });
 }
@@ -225,20 +276,31 @@ export function toSpotifyUri(input: string): string {
 /**
  * Start playback on our Web SDK device. Spotify Connect drops an idle device from
  * its list, after which `/me/player/play` returns 404 "Device not found". When
- * that happens we re-transfer playback to our device and retry the start once.
+ * that happens we re-transfer playback to our device and retry the start — but the
+ * device needs a moment to re-register with Connect after a transfer, so we settle
+ * briefly and retry a couple of times before giving up. This is what made clicks
+ * feel unreliable (the old immediate retry often 404'd again, so only a *second*
+ * user click, once the device was live, would start audio).
  */
 async function startPlayback(body: Record<string, unknown>): Promise<void> {
   const deviceId = playerState.deviceId;
-  if (!deviceId) throw new Error('Player is not ready yet.');
+  if (!deviceId) throw new Error(unavailableReason ?? 'Player is not ready yet.');
   try {
     await apiPut('/me/player/play', { query: { device_id: deviceId }, body });
   } catch (e) {
-    if (e instanceof SpotifyApiError && e.status === 404) {
-      await transferPlayback(deviceId);
-      await apiPut('/me/player/play', { query: { device_id: deviceId }, body });
-      return;
+    if (!(e instanceof SpotifyApiError) || e.status !== 404) throw e;
+    await transferPlayback(deviceId);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await delay(400);
+      try {
+        await apiPut('/me/player/play', { query: { device_id: deviceId }, body });
+        return;
+      } catch (retryErr) {
+        const deviceGone =
+          retryErr instanceof SpotifyApiError && retryErr.status === 404;
+        if (!deviceGone || attempt === 2) throw retryErr;
+      }
     }
-    throw e;
   }
 }
 

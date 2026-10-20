@@ -1,5 +1,9 @@
 node_modules
 dist
+release
 .env
 *.local
 .DS_Store
+
+# Widevine startup diagnostics (local only)
+widevine-debug.log
