@@ -13,7 +13,9 @@
     "test:watch": "vitest",
     "electron:dev": "node electron/dev.cjs",
     "electron:preview": "pnpm build && electron .",
-    "electron:pack": "pnpm build && electron-builder"
+    "electron:pack": "pnpm build && electron-builder",
+    "sign:widevine": "node electron/sign-widevine.cjs",
+    "postinstall": "node electron/sign-widevine.cjs"
   },
   "build": {
     "appId": "com.spotemgotem.app",
@@ -28,9 +30,9 @@
     },
     "afterPack": "electron/afterPack.cjs",
     "electronDownload": {
-      "version": "33.4.11+wvcus",
+      "version": "44.10.1+wvcus",
       "mirror": "https://github.com/castlabs/electron-releases/releases/download/v",
-      "customDir": "33.4.11+wvcus"
+      "customDir": "44.10.1+wvcus"
     },
     "mac": {
       "target": [
@@ -48,7 +50,7 @@
   },
   "devDependencies": {
     "@types/spotify-web-playback-sdk": "^0.1.19",
-    "electron": "https://github.com/castlabs/electron-releases#v33.4.11+wvcus",
+    "electron": "https://github.com/castlabs/electron-releases#v44.10.1+wvcus",
     "electron-builder": "^25.1.8",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",

@@ -7,3 +7,4 @@ release
 
 # Widevine startup diagnostics (local only)
 widevine-debug.log
+.venv-evs/

@@ -218,16 +218,8 @@ export function drawPlaylistWindow(
   blit(ctx, bmps.pledit, sp.bottomLeft, 0, bottomY);
   blit(ctx, bmps.pledit, sp.bottomRight, w - sp.bottomRight.w, bottomY);
 
-  // --- Window title text, centered over the title bar art ------------------
-  if (vm.title) {
-    ctx.font = pleditFont(skin, PL_FONT_PX, true);
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = pal.current;
-    const t = fitText(ctx, vm.title.toUpperCase(), PLEDIT.TITLE_BAR_W - 10);
-    ctx.fillText(t, w / 2, PLEDIT.TITLE_H / 2 + 1);
-    ctx.textAlign = 'left';
-  }
+  // Note: the playlist window title text is intentionally not drawn — the skin's
+  // title-bar art alone reads better than a vector font overlaid on the texture.
 
   // --- Nav row: tabs on the left, actions on the right ---------------------
   const nav = plNavRect(w, h);

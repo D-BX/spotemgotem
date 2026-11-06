@@ -22,18 +22,33 @@ pnpm electron:dev       # Vite + frameless Electron window, hot reload
 pnpm electron:preview   # build, then run the packaged-style app
 ```
 
-Dev and preview get Widevine automatically from the castlabs binary — no signing
-needed to *run* locally. Log in and play a track to confirm audio decrypts.
+### Widevine signing is required, even in dev
+
+castlabs' prebuilt Electron is only signed "for development" (Widevine UAT).
+Spotify's **production** license server rejects that signature, so audio loads
+then throws `playback_error` and skips through the playlist. A castlabs **EVS
+(production) VMP signature** fixes it.
+
+One-time setup (free EVS account):
+
+```
+python3 -m venv .venv-evs
+.venv-evs/bin/python -m pip install castlabs-evs
+.venv-evs/bin/python -m castlabs_evs.account signup   # then confirm the emailed code
+```
+
+After that, `pnpm install` runs `postinstall` → `electron/sign-widevine.cjs`,
+which re-signs the Electron binary with your cached EVS credentials (the binary is
+replaced on every install, so signing must re-run). It's idempotent — a still-valid
+signature is retained without re-uploading. To sign manually: `pnpm sign:widevine`.
+If your EVS session expires: `.venv-evs/bin/python -m castlabs_evs.account reauth`.
+If `castlabs-evs` is missing, signing is skipped with a warning (browsing works;
+audio won't decrypt). Then `pnpm electron:dev`, log in, and play a track.
 
 ## Package a .dmg (Widevine requires VMP signing)
 
-To run outside dev, the packaged app must carry a castlabs **VMP signature** or
-Widevine will refuse to play. One-time setup (free EVS account):
-
-```
-pip install castlabs-evs
-python3 -m castlabs_evs.account --sign-up   # or --reauth if you have an account
-```
+The packaged app must also carry a castlabs **VMP signature** (same EVS account as
+above).
 
 Then:
 
