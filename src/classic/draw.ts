@@ -52,6 +52,9 @@ export interface MainDrawState {
   paused: boolean;
   stopped: boolean;
   active: boolean; // window focused -> lit title bar
+  playlistOpen: boolean; // PL button lit when the playlist window is shown
+  showPopout: boolean; // draw the PIP button (hidden inside the PiP window itself)
+  pipOpen: boolean; // PIP button lit when popped out
   pressed: HotspotName | null;
 }
 
@@ -106,6 +109,15 @@ export function drawMainWindow(
     : (repeatOn ? SHUFREP.repeatSelected : SHUFREP.repeat);
   blit(ctx, bmps.shufrep, repeatSprite, PLACE.repeat.x, PLACE.repeat.y);
 
+  // 7b. Playlist (PL) toggle — lit while the playlist window is shown.
+  blit(
+    ctx,
+    bmps.shufrep,
+    state.playlistOpen ? SHUFREP.plSelected : SHUFREP.pl,
+    PLACE.playlistBtn.x,
+    PLACE.playlistBtn.y,
+  );
+
   // 8. Play/pause/stop indicator.
   const indicator = state.stopped
     ? PLAYPAUS.stopped
@@ -119,6 +131,32 @@ export function drawMainWindow(
 
   // 10. Song title.
   drawTitle(ctx, bmps, skin, state.title, titleScrollPx);
+
+  // 11. Pop-out (PIP) button — a small custom chip at the lower-right. Not an
+  // authentic Winamp control, so it's drawn as a legible box rather than a sprite.
+  if (state.showPopout) drawPopoutButton(ctx, state);
+}
+
+// Compact "PIP" toggle at the bottom-right of the face (right of the repeat
+// button). Lit green while popped out; darkens while pressed.
+function drawPopoutButton(ctx: CanvasRenderingContext2D, state: MainDrawState): void {
+  const { x, y } = PLACE.popoutBtn;
+  const w = 28;
+  const h = 13;
+  const pressed = state.pressed === 'popout';
+  const accent = '#00e678';
+  ctx.save();
+  ctx.fillStyle = pressed ? '#000' : 'rgba(0,0,0,0.6)';
+  ctx.fillRect(x, y, w, h);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = state.pipOpen ? accent : 'rgba(255,255,255,0.5)';
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.fillStyle = state.pipOpen ? accent : 'rgba(255,255,255,0.85)';
+  ctx.font = 'bold 8px "MS Sans Serif", Tahoma, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('PIP', x + w / 2, y + h / 2 + 0.5);
+  ctx.restore();
 }
 
 // ===========================================================================

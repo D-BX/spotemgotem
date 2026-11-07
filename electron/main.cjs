@@ -92,7 +92,10 @@ async function createWindow() {
   });
 
   await win.loadURL(APP_URL);
-  if (DEV) win.webContents.openDevTools({ mode: 'detach' });
+  // DevTools stay closed by default; open them on demand with OPEN_DEVTOOLS=1.
+  if (DEV && process.env.OPEN_DEVTOOLS === '1') {
+    win.webContents.openDevTools({ mode: 'detach' });
+  }
 }
 
 // --- Frameless window controls (from the preload bridge) --------------------

@@ -9,13 +9,13 @@
 // no new player logic lives here. Skin picking/importing and the Pop out / Full UI
 // actions live inside ClassicList's rail, so there's no separate toolbar.
 
-import { Show, createSignal, onCleanup, onMount } from 'solid-js';
+import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { MAIN_WIDTH, MAIN_HEIGHT } from '../skins/sprites';
 import { PLAYLIST_HEIGHT } from './geometry';
 import { loadSkinFromFile } from '../skins/skinStore';
 import { playerState, setPlayerState } from '../player/playerStore';
 import { desktop } from './desktop';
-import { closePip } from './pip';
+import { openPip, closePip, pipSupported, isPipOpen } from './pip';
 import ClassicFace from './ClassicFace';
 import ClassicList from './ClassicList';
 
@@ -36,6 +36,11 @@ const ClassicApp = () => {
   // Desktop: fixed scale, window wraps the skin. Browser/PWA: fit to viewport.
   const [scale, setScale] = createSignal(desktop ? DESKTOP_SCALE : 2);
   const [pos, setPos] = createSignal(desktop ? { x: 0, y: 0 } : { x: 24, y: 24 });
+  // When false, only the player face shows (the PL button hides the browser).
+  const [showList, setShowList] = createSignal(true);
+
+  // Current skin height depends on whether the playlist browser is visible.
+  const skinHeight = (): number => (showList() ? SKIN_H : MAIN_HEIGHT);
 
   function place(): void {
     if (desktop) {
@@ -43,7 +48,7 @@ const ClassicApp = () => {
       // so there's no OS chrome and no empty margin — the skin fills the window.
       setScale(DESKTOP_SCALE);
       setPos({ x: 0, y: 0 });
-      desktop.resize(MAIN_WIDTH * DESKTOP_SCALE, SKIN_H * DESKTOP_SCALE);
+      desktop.resize(MAIN_WIDTH * DESKTOP_SCALE, skinHeight() * DESKTOP_SCALE);
       return;
     }
     const s = fitScale();
@@ -70,6 +75,13 @@ const ClassicApp = () => {
   onCleanup(() => {
     window.removeEventListener('resize', onResize);
     closePip(); // don't leave a popped-out window behind when leaving the view
+  });
+
+  // Re-fit (and, on desktop, resize the native window) whenever the browser is
+  // shown/hidden via the PL button.
+  createEffect(() => {
+    void showList();
+    place();
   });
 
   // Drag & drop a .wsz anywhere on the window to apply it.
@@ -112,10 +124,21 @@ const ClassicApp = () => {
           onMoveBy={moveBy}
           onClose={desktop ? () => desktop?.close() : undefined}
           onMinimize={desktop ? () => desktop?.minimize() : undefined}
+          playlistOpen={showList}
+          onTogglePlaylist={() => setShowList((v) => !v)}
+          pipOpen={isPipOpen}
+          onTogglePip={
+            pipSupported()
+              ? () => (isPipOpen() ? closePip() : void openPip())
+              : undefined
+          }
         />
 
-        {/* Authentic pledit browser window: Queue / Playlists / Liked / Skins. */}
-        <ClassicList scale={scale} onMoveBy={moveBy} />
+        {/* Authentic pledit browser window: Queue / Playlists / Liked / Skins.
+            Hidden by the PL button to show just the player face. */}
+        <Show when={showList()}>
+          <ClassicList scale={scale} onMoveBy={moveBy} />
+        </Show>
       </div>
 
       {/* Playback errors have no other home in classic mode; show them here. */}

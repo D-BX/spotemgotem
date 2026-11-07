@@ -25,6 +25,12 @@ export const HOTSPOTS = {
   shuffle: rect(PLACE.shuffle.x, PLACE.shuffle.y, 47, 15),
   repeat: rect(PLACE.repeat.x, PLACE.repeat.y, 28, 15),
 
+  // Playlist window show/hide (classic "PL" button).
+  playlist: rect(PLACE.playlistBtn.x, PLACE.playlistBtn.y, 23, 12),
+
+  // Pop-out (PIP) button — custom chip at the bottom-right.
+  popout: rect(PLACE.popoutBtn.x, PLACE.popoutBtn.y, 28, 13),
+
   // Title-bar window controls (classic positions on the 275px face).
   titleBar: rect(0, 0, MAIN_WIDTH, 14),
   close: rect(264, 3, 9, 9),
@@ -38,7 +44,7 @@ export function hitTest(x: number, y: number): HotspotName | null {
   const order: HotspotName[] = [
     'close', 'shade',
     'prev', 'play', 'pause', 'stop', 'next', 'eject',
-    'shuffle', 'repeat', 'posBar', 'volume', 'balance',
+    'shuffle', 'repeat', 'playlist', 'popout', 'posBar', 'volume', 'balance',
     'titleBar',
   ];
   for (const name of order) {

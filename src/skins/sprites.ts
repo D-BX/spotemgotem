@@ -85,6 +85,11 @@ export const SHUFREP = {
   repeatDown: r(0, 15, 28, 15),
   repeatSelected: r(0, 30, 28, 15),
   repeatSelectedDown: r(0, 45, 28, 15),
+  // EQ / Playlist toggle buttons (bottom of shufrep.bmp). We only use PL.
+  eq: r(0, 61, 23, 12),
+  eqSelected: r(0, 73, 23, 12),
+  pl: r(23, 61, 23, 12),
+  plSelected: r(23, 73, 23, 12),
 } as const;
 
 /** Digit sprites. numbers.bmp lays digits out left-to-right at 9px pitch. */
@@ -114,6 +119,10 @@ export const PLACE = {
   stereo: { x: 239, y: 41 },
   shuffle: { x: 164, y: 89 },
   repeat: { x: 210, y: 89 },
+  // Playlist (PL) toggle — classic position at the lower-right of the face.
+  playlistBtn: { x: 242, y: 58 },
+  // Custom pop-out (PIP) button — bottom-right, right of the repeat button.
+  popoutBtn: { x: 243, y: 90 },
   playIndicator: { x: 24, y: 28 },
   // Four time digits + leading minus slot, all at y: 26.
   minus: { x: 36, y: 26 },

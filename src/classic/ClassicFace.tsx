@@ -29,6 +29,14 @@ interface FaceProps {
   /** Desktop shell only: the skin's close/shade boxes drive the native window. */
   onClose?: () => void;
   onMinimize?: () => void;
+  /** Whether the playlist window is currently shown (lights the PL button). */
+  playlistOpen?: () => boolean;
+  /** Toggle the playlist window (classic "PL" button). Omitted in PiP. */
+  onTogglePlaylist?: () => void;
+  /** Whether playback is currently popped out (lights the PIP button). */
+  pipOpen?: () => boolean;
+  /** Toggle Picture-in-Picture. When omitted the PIP button isn't drawn (PiP). */
+  onTogglePip?: () => void;
 }
 
 const ClassicFace = (props: FaceProps) => {
@@ -61,6 +69,9 @@ const ClassicFace = (props: FaceProps) => {
       paused: playerState.paused,
       stopped: !playerState.track,
       active: true,
+      playlistOpen: props.playlistOpen?.() ?? false,
+      showPopout: props.onTogglePip != null,
+      pipOpen: props.pipOpen?.() ?? false,
       pressed: pressed(),
     };
     drawMainWindow(ctx, bmps, activeSkin(), state, scrollPx());
@@ -75,6 +86,8 @@ const ClassicFace = (props: FaceProps) => {
     void playerState.shuffle;
     void playerState.repeatMode;
     void playerState.paused;
+    void props.playlistOpen?.();
+    void props.pipOpen?.();
     void pressed();
     void scrollPx();
     render();
@@ -88,7 +101,8 @@ const ClassicFace = (props: FaceProps) => {
     const dt = t - last;
     last = t;
     if (!playerState.paused && playerState.track) {
-      setScrollPx((p) => p + dt * 0.03);
+      // Marquee speed in px/ms (~15px/s). Lower = slower scroll.
+      setScrollPx((p) => p + dt * 0.015);
     }
     raf = animWin().requestAnimationFrame(loop);
   };
@@ -123,6 +137,14 @@ const ClassicFace = (props: FaceProps) => {
     }
     if (hot === 'shade') {
       props.onMinimize?.();
+      return;
+    }
+    if (hot === 'playlist') {
+      props.onTogglePlaylist?.();
+      return;
+    }
+    if (hot === 'popout') {
+      props.onTogglePip?.();
       return;
     }
     if (hot === 'titleBar' || hot === null) {
